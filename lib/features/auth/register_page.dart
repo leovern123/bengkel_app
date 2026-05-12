@@ -2,33 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'auth_service.dart';
-import 'register_page.dart';
 import '../dashboard/dashboard_page.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _RegisterPageState extends State<RegisterPage> {
+  final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool loading = false;
   bool obscurePassword = true;
 
-  void login() async {
-    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+  void register() async {
+    if (nameController.text.isEmpty || emailController.text.isEmpty || passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Silakan isi semua field")),
       );
       return;
     }
 
+    if (passwordController.text.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Password minimal 6 karakter")),
+      );
+      return;
+    }
+
     setState(() => loading = true);
 
-    bool success = await AuthService.login(
+    bool success = await AuthService.register(
+      nameController.text,
       emailController.text,
       passwordController.text,
     );
@@ -47,7 +55,7 @@ class _LoginPageState extends State<LoginPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             backgroundColor: Colors.redAccent,
-            content: Text("Login gagal. Periksa kembali email dan password Anda."),
+            content: Text("Registrasi gagal. Email mungkin sudah terdaftar."),
           ),
         );
       }
@@ -69,41 +77,48 @@ class _LoginPageState extends State<LoginPage> {
               const Center(
                 child: Icon(
                   FontAwesomeIcons.screwdriverWrench,
-                  size: 80,
+                  size: 60,
                   color: Color(0xFFFF8C00),
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
               Center(
                 child: Text(
-                  "BENGKEL APP",
+                  "DAFTAR AKUN",
                   style: GoogleFonts.montserrat(
-                    fontSize: 28,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                     letterSpacing: 2,
                   ),
                 ),
               ),
-              Center(
-                child: Text(
-                  "Solusi Perawatan Kendaraan Anda",
-                  style: GoogleFonts.montserrat(
-                    fontSize: 14,
-                    color: Colors.grey[400],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 60),
+              const SizedBox(height: 40),
               Text(
-                "Login",
+                "Buat Akun Baru",
                 style: GoogleFonts.montserrat(
-                  fontSize: 24,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
               const SizedBox(height: 20),
+              TextField(
+                controller: nameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFF1E1E1E),
+                  hintText: "Nama Lengkap",
+                  hintStyle: const TextStyle(color: Colors.grey),
+                  prefixIcon: const Icon(Icons.person_outline, color: Color(0xFFFF8C00)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 15),
               TextField(
                 controller: emailController,
                 style: const TextStyle(color: Colors.white),
@@ -143,23 +158,12 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {},
-                  child: Text(
-                    "Lupa Password?",
-                    style: TextStyle(color: Colors.grey[400]),
-                  ),
-                ),
-              ),
               const SizedBox(height: 30),
               SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: loading ? null : login,
+                  onPressed: loading ? null : register,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF8C00),
                     shape: RoundedRectangleType.circular(12),
@@ -168,7 +172,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: loading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : Text(
-                          "MASUK",
+                          "DAFTAR",
                           style: GoogleFonts.montserrat(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -182,18 +186,13 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    "Belum punya akun? ",
+                    "Sudah punya akun? ",
                     style: TextStyle(color: Colors.grey[400]),
                   ),
                   GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const RegisterPage()),
-                      );
-                    },
+                    onTap: () => Navigator.pop(context),
                     child: const Text(
-                      "Daftar Sekarang",
+                      "Login",
                       style: TextStyle(
                         color: Color(0xFFFF8C00),
                         fontWeight: FontWeight.bold,
@@ -209,6 +208,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
+
 extension RoundedRectangleType on ElevatedButton {
   static RoundedRectangleBorder circular(double radius) {
     return RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
