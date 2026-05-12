@@ -12,7 +12,9 @@ class ServiceListPage extends StatefulWidget {
 
 class _ServiceListPageState extends State<ServiceListPage> {
   List<ServiceModel> services = [];
+  List<ServiceModel> filteredServices = [];
   bool loading = true;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -25,9 +27,18 @@ class _ServiceListPageState extends State<ServiceListPage> {
     if (mounted) {
       setState(() {
         services = data;
+        filteredServices = data;
         loading = false;
       });
     }
+  }
+
+  void _filterServices(String query) {
+    setState(() {
+      filteredServices = services
+          .where((s) => s.namaService.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    });
   }
 
   void _showForm({ServiceModel? service}) {
@@ -38,9 +49,10 @@ class _ServiceListPageState extends State<ServiceListPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           service == null ? "Tambah Layanan" : "Edit Layanan",
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -48,19 +60,33 @@ class _ServiceListPageState extends State<ServiceListPage> {
             TextField(
               controller: namaController,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: "Nama Layanan", labelStyle: TextStyle(color: Colors.grey)),
+              decoration: InputDecoration(
+                labelText: "Nama Layanan",
+                labelStyle: const TextStyle(color: Colors.grey),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.05),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              ),
             ),
+            const SizedBox(height: 10),
             TextField(
               controller: hargaController,
               keyboardType: TextInputType.number,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: "Harga", labelStyle: TextStyle(color: Colors.grey)),
+              decoration: InputDecoration(
+                labelText: "Harga",
+                labelStyle: const TextStyle(color: Colors.grey),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.05),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal")),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal", style: TextStyle(color: Colors.grey))),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
             onPressed: () async {
               final newService = ServiceModel(
                 namaService: namaController.text,
@@ -79,7 +105,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
                 _fetchServices();
               }
             },
-            child: const Text("Simpan"),
+            child: const Text("Simpan", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -102,40 +128,86 @@ class _ServiceListPageState extends State<ServiceListPage> {
 
     if (confirm) {
       bool success = await DataService.deleteService(id);
-      if (success) _fetchServices();
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Layanan berhasil dihapus")));
+          _fetchServices();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("Gagal menghapus. Layanan mungkin sudah ada di riwayat transaksi."),
+            backgroundColor: Colors.red,
+          ));
+        }
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
           "DAFTAR LAYANAN",
-          style: GoogleFonts.montserrat(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: theme.textTheme.bodyLarge?.color),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _filterServices,
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+              decoration: InputDecoration(
+                hintText: "Cari layanan...",
+                hintStyle: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.4)),
+                prefixIcon: const Icon(Icons.search, color: Colors.blue),
+                filled: true,
+                fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15), 
+                  borderSide: isDark ? BorderSide.none : BorderSide(color: Colors.grey.shade300)
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15), 
+                  borderSide: isDark ? BorderSide.none : BorderSide(color: Colors.grey.shade300)
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              ),
+            ),
           ),
         ),
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator(color: Colors.blue))
-          : services.isEmpty
-              ? const Center(child: Text("Tidak ada layanan", style: TextStyle(color: Colors.white)))
+          : filteredServices.isEmpty
+              ? Center(child: Text("Layanan tidak ditemukan", style: TextStyle(color: theme.textTheme.bodyMedium?.color)))
               : ListView.builder(
                   padding: const EdgeInsets.all(20),
-                  itemCount: services.length,
+                  itemCount: filteredServices.length,
                   itemBuilder: (context, index) {
-                    final service = services[index];
+                    final service = filteredServices[index];
                     return Container(
                       margin: const EdgeInsets.only(bottom: 15),
                       padding: const EdgeInsets.all(15),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E1E1E),
+                        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                         borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          if (!isDark)
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            )
+                        ],
+                        border: Border.all(color: isDark ? Colors.transparent : Colors.grey.shade100),
                       ),
                       child: Row(
                         children: [
@@ -155,16 +227,16 @@ class _ServiceListPageState extends State<ServiceListPage> {
                               children: [
                                 Text(
                                   service.namaService,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: theme.textTheme.bodyLarge?.color,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
                                   ),
                                 ),
                                 const SizedBox(height: 5),
-                                const Text(
+                                Text(
                                   "Jasa Perbaikan",
-                                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                                  style: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.5), fontSize: 12),
                                 ),
                               ],
                             ),
@@ -200,4 +272,3 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 }
-

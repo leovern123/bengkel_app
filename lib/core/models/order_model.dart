@@ -3,7 +3,9 @@ class OrderModel {
   final int customerId;
   final int userId;
   final DateTime tanggal;
+  final DateTime? createdAt;
   final double total;
+  final String? customerName;
   final List<OrderDetailModel>? details;
 
   OrderModel({
@@ -11,19 +13,29 @@ class OrderModel {
     required this.customerId,
     required this.userId,
     required this.tanggal,
+    this.createdAt,
     required this.total,
+    this.customerName,
     this.details,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
+    // Mencoba mengambil waktu dari 'created_at' jika tersedia, jika tidak gunakan 'tanggal'
+    DateTime parsedDate;
+    if (json['created_at'] != null) {
+      parsedDate = DateTime.parse(json['created_at']).toLocal();
+    } else {
+      parsedDate = DateTime.parse(json['tanggal'] ?? DateTime.now().toString());
+    }
+
     return OrderModel(
       id: json['id'],
       customerId: json['customer_id'],
       userId: json['user_id'],
-      tanggal: json['tanggal'] != null 
-          ? DateTime.parse(json['tanggal']) 
-          : DateTime.now(),
+      tanggal: parsedDate,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']).toLocal() : null,
       total: double.tryParse(json['total'].toString()) ?? 0.0,
+      customerName: json['customer'] != null ? json['customer']['nama'] : (json['customer_name'] ?? "Pelanggan"),
       details: json['details'] != null
           ? (json['details'] as List)
               .map((i) => OrderDetailModel.fromJson(i))

@@ -1,7 +1,9 @@
+import 'package:dio/dio.dart';
 import 'api_client.dart';
 import '../models/product_model.dart';
 import '../models/service_model.dart';
 import '../models/customer_model.dart';
+import '../models/order_model.dart';
 
 class DataService {
   // === PRODUCTS ===
@@ -14,22 +16,67 @@ class DataService {
     }
   }
 
-  static Future<bool> addProduct(ProductModel product) async {
+  static Future<bool> addProduct(ProductModel product, {dynamic imageFile}) async {
     try {
-      await ApiClient.dio.post("/products", data: product.toJson());
+      Map<String, dynamic> data = product.toJson();
+      
+      if (imageFile != null) {
+        // Gunakan FormData untuk upload file
+        FormData formData = FormData.fromMap({
+          ...data,
+          'gambar': await _createMultipartFile(imageFile),
+        });
+        
+        await ApiClient.dio.post("/products", data: formData);
+      } else {
+        await ApiClient.dio.post("/products", data: data);
+      }
       return true;
     } catch (e) {
+      if (e is DioException) {
+        print("Error adding product: ${e.response?.data ?? e.message}");
+      } else {
+        print("Error adding product: $e");
+      }
       return false;
     }
   }
 
-  static Future<bool> updateProduct(int id, ProductModel product) async {
+  static Future<bool> updateProduct(int id, ProductModel product, {dynamic imageFile}) async {
     try {
-      await ApiClient.dio.put("/products/$id", data: product.toJson());
+      Map<String, dynamic> data = product.toJson();
+      
+      if (imageFile != null) {
+        // Laravel PUT with Multipart requires _method override
+        FormData formData = FormData.fromMap({
+          ...data,
+          '_method': 'PUT',
+          'gambar': await _createMultipartFile(imageFile),
+        });
+        
+        await ApiClient.dio.post("/products/$id", data: formData);
+      } else {
+        await ApiClient.dio.put("/products/$id", data: data);
+      }
       return true;
     } catch (e) {
+      if (e is DioException) {
+        print("Error updating product: ${e.response?.data ?? e.message}");
+      } else {
+        print("Error updating product: $e");
+      }
       return false;
     }
+  }
+
+  static Future<MultipartFile> _createMultipartFile(dynamic file) async {
+    String path = (file is String) ? file : file.path;
+    String fileName = path.split('/').last;
+    
+    return await MultipartFile.fromFile(
+      path,
+      filename: fileName,
+    );
   }
 
   static Future<bool> deleteProduct(int id) async {
@@ -112,6 +159,27 @@ class DataService {
       return true;
     } catch (e) {
       return false;
+    }
+  }
+
+  // === ORDERS ===
+  static Future<bool> addOrder(Map<String, dynamic> orderData) async {
+    try {
+      await ApiClient.dio.post("/orders", data: orderData);
+      return true;
+    } catch (e) {
+      print("Error adding order: $e");
+      return false;
+    }
+  }
+
+  static Future<List<OrderModel>> getOrders() async {
+    try {
+      final response = await ApiClient.dio.get("/orders");
+      return (response.data as List).map((i) => OrderModel.fromJson(i)).toList();
+    } catch (e) {
+      print("Error fetching orders: $e");
+      return [];
     }
   }
 }

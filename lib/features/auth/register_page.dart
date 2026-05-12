@@ -64,8 +64,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SingleChildScrollView(
         child: Container(
           height: MediaQuery.of(context).size.height,
@@ -85,10 +88,10 @@ class _RegisterPageState extends State<RegisterPage> {
               Center(
                 child: Text(
                   "DAFTAR AKUN",
-                  style: GoogleFonts.montserrat(
+                  style: GoogleFonts.outfit(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: theme.textTheme.bodyLarge?.color,
                     letterSpacing: 2,
                   ),
                 ),
@@ -96,41 +99,49 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 40),
               Text(
                 "Buat Akun Baru",
-                style: GoogleFonts.montserrat(
+                style: GoogleFonts.outfit(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: theme.textTheme.bodyLarge?.color,
                 ),
               ),
               const SizedBox(height: 20),
               TextField(
                 controller: nameController,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: theme.textTheme.bodyLarge?.color),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: const Color(0xFF1E1E1E),
+                  fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   hintText: "Nama Lengkap",
                   hintStyle: const TextStyle(color: Colors.grey),
                   prefixIcon: const Icon(Icons.person_outline, color: Color(0xFFFF8C00)),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+                    borderSide: isDark ? BorderSide.none : BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: isDark ? BorderSide.none : BorderSide(color: Colors.grey.shade300),
                   ),
                 ),
               ),
               const SizedBox(height: 15),
               TextField(
                 controller: emailController,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: theme.textTheme.bodyLarge?.color),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: const Color(0xFF1E1E1E),
+                  fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   hintText: "Email",
                   hintStyle: const TextStyle(color: Colors.grey),
                   prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFFFF8C00)),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+                    borderSide: isDark ? BorderSide.none : BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: isDark ? BorderSide.none : BorderSide(color: Colors.grey.shade300),
                   ),
                 ),
               ),
@@ -138,10 +149,10 @@ class _RegisterPageState extends State<RegisterPage> {
               TextField(
                 controller: passwordController,
                 obscureText: obscurePassword,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: theme.textTheme.bodyLarge?.color),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: const Color(0xFF1E1E1E),
+                  fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   hintText: "Password",
                   hintStyle: const TextStyle(color: Colors.grey),
                   prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFFFF8C00)),
@@ -154,7 +165,11 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+                    borderSide: isDark ? BorderSide.none : BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: isDark ? BorderSide.none : BorderSide(color: Colors.grey.shade300),
                   ),
                 ),
               ),
@@ -166,14 +181,14 @@ class _RegisterPageState extends State<RegisterPage> {
                   onPressed: loading ? null : register,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF8C00),
-                    shape: RoundedRectangleType.circular(12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 5,
                   ),
                   child: loading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : Text(
                           "DAFTAR",
-                          style: GoogleFonts.montserrat(
+                          style: GoogleFonts.outfit(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -187,7 +202,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 children: [
                   Text(
                     "Sudah punya akun? ",
-                    style: TextStyle(color: Colors.grey[400]),
+                    style: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.5)),
                   ),
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
@@ -206,11 +221,5 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
       ),
     );
-  }
-}
-
-extension RoundedRectangleType on ElevatedButton {
-  static RoundedRectangleBorder circular(double radius) {
-    return RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
   }
 }

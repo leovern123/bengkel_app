@@ -12,7 +12,9 @@ class CustomerListPage extends StatefulWidget {
 
 class _CustomerListPageState extends State<CustomerListPage> {
   List<CustomerModel> customers = [];
+  List<CustomerModel> filteredCustomers = [];
   bool loading = true;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -25,9 +27,18 @@ class _CustomerListPageState extends State<CustomerListPage> {
     if (mounted) {
       setState(() {
         customers = data;
+        filteredCustomers = data;
         loading = false;
       });
     }
+  }
+
+  void _filterCustomers(String query) {
+    setState(() {
+      filteredCustomers = customers
+          .where((c) => c.nama.toLowerCase().contains(query.toLowerCase()) || c.noPlat.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    });
   }
 
   void _showForm({CustomerModel? customer}) {
@@ -39,9 +50,10 @@ class _CustomerListPageState extends State<CustomerListPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           customer == null ? "Tambah Pelanggan" : "Edit Pelanggan",
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -49,23 +61,44 @@ class _CustomerListPageState extends State<CustomerListPage> {
             TextField(
               controller: namaController,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: "Nama", labelStyle: TextStyle(color: Colors.grey)),
+              decoration: InputDecoration(
+                labelText: "Nama",
+                labelStyle: const TextStyle(color: Colors.grey),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.05),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              ),
             ),
+            const SizedBox(height: 10),
             TextField(
               controller: noPlatController,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: "No. Plat", labelStyle: TextStyle(color: Colors.grey)),
+              decoration: InputDecoration(
+                labelText: "No. Plat",
+                labelStyle: const TextStyle(color: Colors.grey),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.05),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              ),
             ),
+            const SizedBox(height: 10),
             TextField(
               controller: noHpController,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: "No. HP", labelStyle: TextStyle(color: Colors.grey)),
+              decoration: InputDecoration(
+                labelText: "No. HP",
+                labelStyle: const TextStyle(color: Colors.grey),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.05),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal")),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal", style: TextStyle(color: Colors.grey))),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
             onPressed: () async {
               final newCustomer = CustomerModel(
                 nama: namaController.text,
@@ -85,7 +118,7 @@ class _CustomerListPageState extends State<CustomerListPage> {
                 _fetchCustomers();
               }
             },
-            child: const Text("Simpan"),
+            child: const Text("Simpan", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -108,40 +141,95 @@ class _CustomerListPageState extends State<CustomerListPage> {
 
     if (confirm) {
       bool success = await DataService.deleteCustomer(id);
-      if (success) _fetchCustomers();
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Pelanggan berhasil dihapus")));
+          _fetchCustomers();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("Gagal menghapus. Pelanggan mungkin terkait dengan riwayat transaksi."),
+            backgroundColor: Colors.red,
+          ));
+        }
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text("DATA PELANGGAN", style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: Text(
+          "DATA PELANGGAN",
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: theme.textTheme.bodyLarge?.color),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _filterCustomers,
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+              decoration: InputDecoration(
+                hintText: "Cari nama atau plat nomor...",
+                hintStyle: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.4)),
+                prefixIcon: const Icon(Icons.search, color: Colors.green),
+                filled: true,
+                fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15), 
+                  borderSide: isDark ? BorderSide.none : BorderSide(color: Colors.grey.shade300)
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15), 
+                  borderSide: isDark ? BorderSide.none : BorderSide(color: Colors.grey.shade300)
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              ),
+            ),
+          ),
+        ),
       ),
       body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : customers.isEmpty
-              ? const Center(child: Text("Belum ada pelanggan", style: TextStyle(color: Colors.white)))
+          ? const Center(child: CircularProgressIndicator(color: Colors.green))
+          : filteredCustomers.isEmpty
+              ? Center(child: Text("Pelanggan tidak ditemukan", style: TextStyle(color: theme.textTheme.bodyMedium?.color)))
               : ListView.builder(
                   padding: const EdgeInsets.all(20),
-                  itemCount: customers.length,
+                  itemCount: filteredCustomers.length,
                   itemBuilder: (context, index) {
-                    final c = customers[index];
-                    return Card(
-                      color: const Color(0xFF1E1E1E),
+                    final c = filteredCustomers[index];
+                    return Container(
                       margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          if (!isDark)
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            )
+                        ],
+                        border: Border.all(color: isDark ? Colors.transparent : Colors.grey.shade100),
+                      ),
                       child: ListTile(
                         leading: const CircleAvatar(backgroundColor: Colors.green, child: Icon(Icons.person, color: Colors.white)),
-                        title: Text(c.nama, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        subtitle: Text("${c.noPlat} | ${c.noHp ?? '-'}", style: const TextStyle(color: Colors.grey)),
+                        title: Text(c.nama, style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontWeight: FontWeight.bold)),
+                        subtitle: Text("${c.noPlat} | ${c.noHp ?? '-'}", style: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.5))),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _showForm(customer: c)),
-                            IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _deleteCustomer(c.id!)),
+                            IconButton(icon: const Icon(Icons.edit, color: Colors.blue, size: 20), onPressed: () => _showForm(customer: c)),
+                            IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: () => _deleteCustomer(c.id!)),
                           ],
                         ),
                       ),
