@@ -25,6 +25,8 @@ class _HistoryPageState extends State<HistoryPage> {
   final TextEditingController _searchController = TextEditingController();
   final currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
   final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
+  int _currentPage = 0;
+  final int _itemsPerPage = 10;
 
   @override
   void initState() {
@@ -45,6 +47,7 @@ class _HistoryPageState extends State<HistoryPage> {
         products = p;
         services = s;
         loading = false;
+        _currentPage = 0;
       });
     }
   }
@@ -55,6 +58,7 @@ class _HistoryPageState extends State<HistoryPage> {
         final customerName = _getCustomerName(order.customerId).toLowerCase();
         return customerName.contains(query.toLowerCase());
       }).toList();
+      _currentPage = 0;
     });
   }
 
@@ -136,31 +140,121 @@ class _HistoryPageState extends State<HistoryPage> {
               color: const Color(0xFFFF8C00),
               child: filteredOrders.isEmpty
                   ? _buildEmptyState(theme)
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(20),
-                      itemCount: filteredOrders.length,
-                      itemBuilder: (context, index) {
-                        final order = filteredOrders[index];
-                        return _buildOrderCard(theme, order);
+                  : Builder(
+                      builder: (context) {
+                        final startIndex = _currentPage * _itemsPerPage;
+                        final endIndex = (startIndex + _itemsPerPage).clamp(0, filteredOrders.length);
+                        final pageOrders = filteredOrders.sublist(startIndex, endIndex);
+
+                        return Column(
+                          children: [
+                            Expanded(
+                              child: ListView.builder(
+                                padding: const EdgeInsets.all(20),
+                                itemCount: pageOrders.length,
+                                itemBuilder: (context, index) {
+                                  final order = pageOrders[index];
+                                  return _buildOrderCard(theme, order);
+                                },
+                              ),
+                            ),
+                            _buildPaginationControls(theme, isDark),
+                          ],
+                        );
                       },
                     ),
             ),
     );
   }
 
-  Widget _buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildPaginationControls(ThemeData theme, bool isDark) {
+    final totalPages = (filteredOrders.length / _itemsPerPage).ceil();
+    if (totalPages <= 1) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade200,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(Icons.history_rounded, size: 80, color: theme.textTheme.bodySmall?.color?.withOpacity(0.1)),
-          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _currentPage > 0
+                ? () {
+                    setState(() {
+                      _currentPage--;
+                    });
+                  }
+                : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF8C00),
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: isDark ? Colors.white10 : Colors.grey.shade200,
+              disabledForegroundColor: isDark ? Colors.white30 : Colors.grey.shade400,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text("Prev"),
+          ),
           Text(
-            "Belum ada transaksi",
-            style: GoogleFonts.outfit(color: theme.textTheme.bodySmall?.color?.withOpacity(0.5), fontSize: 16),
+            "${_currentPage + 1} / $totalPages",
+            style: GoogleFonts.outfit(
+              fontWeight: FontWeight.bold,
+              color: theme.textTheme.bodyLarge?.color,
+            ),
+          ),
+          ElevatedButton(
+            onPressed: (_currentPage + 1) * _itemsPerPage < filteredOrders.length
+                ? () {
+                    setState(() {
+                      _currentPage++;
+                    });
+                  }
+                : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF8C00),
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: isDark ? Colors.white10 : Colors.grey.shade200,
+              disabledForegroundColor: isDark ? Colors.white30 : Colors.grey.shade400,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text("Next"),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildEmptyState(ThemeData theme) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.5,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.history_rounded, size: 80, color: theme.textTheme.bodySmall?.color?.withOpacity(0.1)),
+                const SizedBox(height: 20),
+                Text(
+                  "Belum ada transaksi",
+                  style: GoogleFonts.outfit(color: theme.textTheme.bodySmall?.color?.withOpacity(0.5), fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

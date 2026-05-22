@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import '../../core/api/data_service.dart';
 import '../../core/models/order_model.dart';
 import '../../core/utils/receipt_service.dart';
-import '../../core/models/customer_model.dart';
 
 class ReportPage extends StatefulWidget {
   const ReportPage({super.key});
@@ -19,6 +18,8 @@ class _ReportPageState extends State<ReportPage> {
   bool loading = true;
   String filterType = 'Daily'; // Daily, Monthly, Yearly
   DateTime selectedDate = DateTime.now();
+  int _currentPage = 0;
+  final int _itemsPerPage = 10;
 
   @override
   void initState() {
@@ -52,6 +53,7 @@ class _ReportPageState extends State<ReportPage> {
           return order.tanggal.year == selectedDate.year;
         }
       }).toList();
+      _currentPage = 0;
     });
   }
 
@@ -270,52 +272,148 @@ class _ReportPageState extends State<ReportPage> {
   Widget _buildOrderList(ThemeData theme, bool isDark) {
     final currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     if (filteredOrders.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      return RefreshIndicator(
+        onRefresh: _fetchOrders,
+        color: const Color(0xFFFF8C00),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            Icon(Icons.receipt_long_outlined, size: 60, color: theme.hintColor.withOpacity(0.3)),
-            const SizedBox(height: 16),
-            Text("Tidak ada transaksi", style: GoogleFonts.outfit(color: theme.hintColor)),
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.4,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.receipt_long_outlined, size: 60, color: theme.hintColor.withOpacity(0.3)),
+                    const SizedBox(height: 16),
+                    Text("Tidak ada transaksi", style: GoogleFonts.outfit(color: theme.hintColor)),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: filteredOrders.length,
-      itemBuilder: (context, index) {
-        final order = filteredOrders[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100),
+
+    final startIndex = _currentPage * _itemsPerPage;
+    final endIndex = (startIndex + _itemsPerPage).clamp(0, filteredOrders.length);
+    final pageOrders = filteredOrders.sublist(startIndex, endIndex);
+
+    return RefreshIndicator(
+      onRefresh: _fetchOrders,
+      color: const Color(0xFFFF8C00),
+      child: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(20),
+              itemCount: pageOrders.length,
+              itemBuilder: (context, index) {
+                final order = pageOrders[index];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), shape: BoxShape.circle),
+                        child: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Transaksi #${order.id}", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                            Text(DateFormat('dd MMM yyyy, HH:mm').format(order.tanggal), style: GoogleFonts.outfit(fontSize: 12, color: theme.hintColor)),
+                          ],
+                        ),
+                      ),
+                      Text(currencyFormat.format(order.total), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFFF8C00))),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), shape: BoxShape.circle),
-                child: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20),
-              ),
-              const SizedBox(width: 15),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Transaksi #${order.id}", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-                    Text(DateFormat('dd MMM yyyy, HH:mm').format(order.tanggal), style: GoogleFonts.outfit(fontSize: 12, color: theme.hintColor)),
-                  ],
-                ),
-              ),
-              Text(currencyFormat.format(order.total), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFFF8C00))),
-            ],
+          _buildPaginationControls(theme, isDark),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaginationControls(ThemeData theme, bool isDark) {
+    final totalPages = (filteredOrders.length / _itemsPerPage).ceil();
+    if (totalPages <= 1) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade200,
           ),
-        );
-      },
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          ElevatedButton(
+            onPressed: _currentPage > 0
+                ? () {
+                    setState(() {
+                      _currentPage--;
+                    });
+                  }
+                : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF8C00),
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: isDark ? Colors.white10 : Colors.grey.shade200,
+              disabledForegroundColor: isDark ? Colors.white30 : Colors.grey.shade400,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text("Prev"),
+          ),
+          Text(
+            "${_currentPage + 1} / $totalPages",
+            style: GoogleFonts.outfit(
+              fontWeight: FontWeight.bold,
+              color: theme.textTheme.bodyLarge?.color,
+            ),
+          ),
+          ElevatedButton(
+            onPressed: (_currentPage + 1) * _itemsPerPage < filteredOrders.length
+                ? () {
+                    setState(() {
+                      _currentPage++;
+                    });
+                  }
+                : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF8C00),
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: isDark ? Colors.white10 : Colors.grey.shade200,
+              disabledForegroundColor: isDark ? Colors.white30 : Colors.grey.shade400,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text("Next"),
+          ),
+        ],
+      ),
     );
   }
 }
