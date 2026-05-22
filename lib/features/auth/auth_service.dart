@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
 import '../../core/api/api_client.dart';
 import '../../core/storage/token_storage.dart';
 
@@ -50,6 +52,20 @@ class AuthService {
     }
   }
 
+  static Future<String?> uploadAvatar(File imageFile) async {
+    try {
+      final fileName = imageFile.path.split('/').last;
+      final formData = FormData.fromMap({
+        'avatar': await MultipartFile.fromFile(imageFile.path, filename: fileName),
+      });
+      final response = await ApiClient.dio.post("/profile/avatar", data: formData);
+      return response.data['avatar_url'];
+    } catch (e) {
+      print("UPLOAD AVATAR ERROR: $e");
+      return null;
+    }
+  }
+
   static Future<bool> logout() async {
     try {
       await ApiClient.dio.post("/logout");
@@ -60,4 +76,4 @@ class AuthService {
       return false;
     }
   }
-}
+}

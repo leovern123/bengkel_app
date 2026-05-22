@@ -7,6 +7,7 @@ import '../../core/models/product_model.dart';
 import '../../core/models/service_model.dart';
 import '../../core/utils/notification_service.dart';
 import '../../core/utils/notification_manager.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class OrderPage extends StatefulWidget {
   const OrderPage({super.key});
@@ -236,9 +237,11 @@ void _processOrder() async {
                         const SizedBox(height: 30),
                         _buildSectionTitle(theme, "Pilih Layanan"),
                         const SizedBox(height: 12),
-                        Column(
-                          children: services.map((s) => _buildServiceItem(theme, s)).toList(),
-                        ),
+                        _buildServiceSelector(theme),
+                        if (selectedServiceIds.isNotEmpty) ...[
+                          const SizedBox(height: 15),
+                          _buildSelectedServicesList(theme),
+                        ],
                         const SizedBox(height: 30),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -270,8 +273,13 @@ void _processOrder() async {
                           ),
                         ),
                         const SizedBox(height: 15),
-                        Column(
-                          children: filteredProducts.map((p) => _buildProductItem(theme, p)).toList(),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: filteredProducts.length,
+                          itemBuilder: (context, index) {
+                            return _buildProductItem(theme, filteredProducts[index]);
+                          },
                         ),
                         if (filteredProducts.isEmpty)
                           Center(
@@ -307,68 +315,150 @@ void _processOrder() async {
   Widget _buildCustomerSelector(ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade200),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+        ],
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<CustomerModel>(
-          dropdownColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-          value: selectedCustomer,
-          hint: Text("Pilih Pelanggan", style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.4))),
-          isExpanded: true,
-          icon: Icon(Icons.keyboard_arrow_down_rounded, color: theme.primaryColor),
-          style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 15),
-          items: customers.map((c) {
-            return DropdownMenuItem(
-              value: c,
-              child: Text("${c.nama} - ${c.noPlat}"),
-            );
-          }).toList(),
-          onChanged: (val) => setState(() => selectedCustomer = val),
-        ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF8C00).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.person_rounded, color: Color(0xFFFF8C00)),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<CustomerModel>(
+                dropdownColor: isDark ? const Color(0xFF2D2D2D) : Colors.white,
+                value: selectedCustomer,
+                hint: Text("Pilih Pelanggan", style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.4))),
+                isExpanded: true,
+                icon: Icon(Icons.keyboard_arrow_down_rounded, color: theme.primaryColor),
+                style: GoogleFonts.outfit(color: theme.textTheme.bodyLarge?.color, fontSize: 16, fontWeight: FontWeight.w500),
+                items: customers.map((c) {
+                  return DropdownMenuItem(
+                    value: c,
+                    child: Text("${c.nama} - ${c.noPlat}"),
+                  );
+                }).toList(),
+                onChanged: (val) => setState(() => selectedCustomer = val),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildServiceItem(ThemeData theme, ServiceModel service) {
+  Widget _buildServiceSelector(ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
-    bool isSelected = selectedServiceIds.contains(service.id);
+    
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
       decoration: BoxDecoration(
-        color: isSelected 
-            ? (isDark ? const Color(0xFF2D2D2D) : Colors.orange.shade50) 
-            : (isDark ? const Color(0xFF1A1A1A) : Colors.white),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: isSelected ? theme.primaryColor.withOpacity(0.3) : (isDark ? Colors.transparent : Colors.grey.shade200),
-        ),
+        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade200),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+        ],
       ),
-      child: CheckboxListTile(
-        activeColor: theme.primaryColor,
-        checkColor: Colors.white,
-        title: Text(
-          service.namaService,
-          style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          currencyFormat.format(service.harga),
-          style: const TextStyle(color: Color(0xFF4285F4), fontWeight: FontWeight.bold),
-        ),
-        value: isSelected,
-        onChanged: (val) {
-          setState(() {
-            if (val!) {
-              selectedServiceIds.add(service.id!);
-            } else {
-              selectedServiceIds.remove(service.id);
-            }
-          });
-        },
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF4285F4).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.build_circle_rounded, color: Color(0xFF4285F4)),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<ServiceModel>(
+                dropdownColor: isDark ? const Color(0xFF2D2D2D) : Colors.white,
+                value: null,
+                hint: Text("Pilih Layanan...", style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.4))),
+                isExpanded: true,
+                icon: Icon(Icons.keyboard_arrow_down_rounded, color: theme.primaryColor),
+                style: GoogleFonts.outfit(color: theme.textTheme.bodyLarge?.color, fontSize: 16, fontWeight: FontWeight.w500),
+                items: services.map((s) {
+                  return DropdownMenuItem(
+                    value: s,
+                    child: Text("${s.namaService} - ${currencyFormat.format(s.harga)}"),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null && !selectedServiceIds.contains(val.id)) {
+                    setState(() {
+                      selectedServiceIds.add(val.id!);
+                    });
+                  }
+                },
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildSelectedServicesList(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    return Column(
+      children: selectedServiceIds.map((id) {
+        final service = services.firstWhere((s) => s.id == id);
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF2D2D2D) : Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: const Color(0xFF4285F4).withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(service.namaService, style: GoogleFonts.outfit(color: theme.textTheme.bodyLarge?.color, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(currencyFormat.format(service.harga), style: GoogleFonts.outfit(color: const Color(0xFF4285F4), fontWeight: FontWeight.w600, fontSize: 13)),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                onPressed: () => setState(() => selectedServiceIds.remove(id)),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              )
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -376,61 +466,128 @@ void _processOrder() async {
     final isDark = theme.brightness == Brightness.dark;
     int qty = productQuantities[product.id] ?? 0;
     bool isSelected = qty > 0;
+    int sisaStok = product.stok - qty;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: isSelected 
             ? (isDark ? const Color(0xFF2D2D2D) : Colors.orange.shade50) 
             : (isDark ? const Color(0xFF1A1A1A) : Colors.white),
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isSelected ? theme.primaryColor.withOpacity(0.3) : (isDark ? Colors.transparent : Colors.grey.shade200),
+          color: isSelected ? const Color(0xFFFF8C00).withOpacity(0.5) : (isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade200),
+          width: isSelected ? 2 : 1,
         ),
+        boxShadow: [
+          if (!isDark && !isSelected)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            )
+        ],
       ),
       child: Row(
         children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: product.gambarUrl != null
+                  ? CachedNetworkImage(
+                      imageUrl: product.gambarUrl!,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => const Padding(
+                        padding: EdgeInsets.all(15.0),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF8C00)),
+                      ),
+                      errorWidget: (context, url, error) => Icon(Icons.broken_image_rounded, color: theme.textTheme.bodySmall?.color?.withOpacity(0.5), size: 30),
+                    )
+                  : Icon(Icons.inventory_2_rounded, color: theme.textTheme.bodySmall?.color?.withOpacity(0.5), size: 30),
+            ),
+          ),
+          const SizedBox(width: 15),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   product.namaProduk,
-                  style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.outfit(color: theme.textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 16),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 4),
                 Text(
                   currencyFormat.format(product.harga),
-                  style: TextStyle(color: theme.primaryColor, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.outfit(color: const Color(0xFFFF8C00), fontWeight: FontWeight.w600, fontSize: 15),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: sisaStok <= 5 ? Colors.red.withOpacity(0.1) : Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    "Stok: $sisaStok",
+                    style: TextStyle(
+                      color: sisaStok <= 5 ? Colors.red : Colors.green,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
           Container(
             decoration: BoxDecoration(
-              color: isDark ? Colors.black.withOpacity(0.2) : Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(10),
+              color: isDark ? const Color(0xFF333333) : Colors.white,
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: isDark ? Colors.transparent : Colors.grey.shade300),
+              boxShadow: [
+                if (!isDark)
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
+                  )
+              ],
             ),
             child: Row(
               children: [
                 IconButton(
-                  icon: Icon(Icons.remove, color: theme.textTheme.bodySmall?.color?.withOpacity(0.5), size: 18),
+                  icon: Icon(Icons.remove_rounded, color: qty > 0 ? const Color(0xFFFF8C00) : theme.textTheme.bodySmall?.color?.withOpacity(0.3), size: 20),
                   onPressed: qty > 0
                       ? () => setState(() {
                             productQuantities[product.id!] = qty - 1;
                             if (productQuantities[product.id] == 0) productQuantities.remove(product.id);
                           })
                       : null,
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                 ),
                 Text(
                   "$qty",
-                  style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.outfit(color: theme.textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 IconButton(
-                  icon: Icon(Icons.add, color: theme.primaryColor, size: 18),
-                  onPressed: () => setState(() {
-                    productQuantities[product.id!] = qty + 1;
-                  }),
+                  icon: Icon(Icons.add_rounded, color: sisaStok > 0 ? const Color(0xFFFF8C00) : theme.textTheme.bodySmall?.color?.withOpacity(0.3), size: 20),
+                  onPressed: sisaStok > 0
+                      ? () => setState(() {
+                            productQuantities[product.id!] = qty + 1;
+                          })
+                      : null,
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                 ),
               ],
             ),
@@ -445,58 +602,83 @@ void _processOrder() async {
     return Container(
       padding: const EdgeInsets.all(25),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(35)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.5 : 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+            blurRadius: 25,
+            offset: const Offset(0, -10),
           ),
         ],
-        border: isDark ? null : Border(top: BorderSide(color: Colors.grey.shade200)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Total Pembayaran",
-                    style: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.5), fontSize: 14),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    currencyFormat.format(total),
-                    style: GoogleFonts.outfit(
-                      color: theme.textTheme.bodyLarge?.color,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Total Pembayaran",
+                      style: GoogleFonts.outfit(color: theme.textTheme.bodySmall?.color?.withOpacity(0.6), fontSize: 14, fontWeight: FontWeight.w600),
                     ),
-                  ),
-                ],
-              ),
-              ElevatedButton(
-                onPressed: processing || selectedCustomer == null || (productQuantities.isEmpty && selectedServiceIds.isEmpty) ? null : _processOrder,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF8C00),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                  elevation: 5,
+                    const SizedBox(height: 4),
+                    Text(
+                      currencyFormat.format(total),
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFFFF8C00),
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
-                child: processing
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text("PROSES", style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-        ],
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      colors: processing || selectedCustomer == null || (productQuantities.isEmpty && selectedServiceIds.isEmpty)
+                          ? [Colors.grey.shade400, Colors.grey.shade500]
+                          : [const Color(0xFFFF8C00), const Color(0xFFEA4335)],
+                    ),
+                    boxShadow: [
+                      if (!processing && selectedCustomer != null && (productQuantities.isNotEmpty || selectedServiceIds.isNotEmpty))
+                        BoxShadow(
+                          color: const Color(0xFFFF8C00).withOpacity(0.4),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        )
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    onPressed: processing || selectedCustomer == null || (productQuantities.isEmpty && selectedServiceIds.isEmpty) ? null : _processOrder,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    ),
+                    child: processing
+                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text("PROSES", style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1)),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_forward_rounded, size: 20),
+                            ],
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

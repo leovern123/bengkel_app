@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../auth/auth_service.dart';
 import '../auth/login_page.dart';
+import 'settings_page.dart';
+import 'help_support_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -15,7 +18,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic>? userProfile;
   bool loading = true;
-  File? _image;
+  bool uploading = false;
 
   @override
   void initState() {
@@ -25,15 +28,51 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+      maxWidth: 800,
+    );
 
     if (image != null) {
-      setState(() {
-        _image = File(image.path);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Foto profil diperbarui!")),
-      );
+      setState(() => uploading = true);
+      final avatarUrl = await AuthService.uploadAvatar(File(image.path));
+      if (avatarUrl != null && mounted) {
+        setState(() {
+          userProfile = {...?userProfile, 'avatar_url': avatarUrl};
+          uploading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 10),
+                Text("Foto profil berhasil diperbarui!", style: GoogleFonts.outfit()),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      } else if (mounted) {
+        setState(() => uploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 10),
+                Text("Gagal mengunggah foto.", style: GoogleFonts.outfit()),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
     }
   }
 
@@ -87,7 +126,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _showChangePasswordDialog() {
-    final theme = Theme.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -148,6 +186,8 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildProfileHeader(ThemeData theme, bool isDark) {
+    final avatarUrl = userProfile?['avatar_url'];
+
     return Column(
       children: [
         Stack(
@@ -162,29 +202,58 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFFF8C00).withOpacity(0.3),
+                    color: const Color(0xFFFF8C00).withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   )
                 ],
               ),
               child: ClipOval(
-                child: _image != null
-                    ? Image.file(_image!, fit: BoxFit.cover)
-                    : const Center(
-                        child: Icon(Icons.person_rounded, size: 60, color: Colors.white),
-                      ),
+                child: uploading
+                    ? const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      )
+                    : avatarUrl != null
+                        ? CachedNetworkImage(
+                            imageUrl: avatarUrl,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator(color: Colors.white),
+                            ),
+                            errorWidget: (context, url, error) => const Center(
+                              child: Icon(Icons.person_rounded, size: 60, color: Colors.white),
+                            ),
+                          )
+                        : const Center(
+                            child: Icon(Icons.person_rounded, size: 60, color: Colors.white),
+                          ),
               ),
             ),
             Positioned(
               bottom: 0,
               right: 0,
               child: GestureDetector(
-                onTap: _pickImage,
+                onTap: uploading ? null : _pickImage,
                 child: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
-                  child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
+                  decoration: BoxDecoration(
+                    color: uploading ? Colors.grey : Colors.blue,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                      )
+                    ],
+                  ),
+                  child: uploading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
                 ),
               ),
             )
@@ -209,7 +278,7 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
         borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100),
+        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100),
       ),
       child: Column(
         children: [
@@ -244,9 +313,21 @@ class _ProfilePageState extends State<ProfilePage> {
       children: [
         _buildMenuAction(Icons.lock_outline_rounded, "Ubah Password", theme, isDark, onTap: _showChangePasswordDialog),
         const SizedBox(height: 12),
-        _buildMenuAction(Icons.settings_outlined, "Settings", theme, isDark),
+        _buildMenuAction(
+          Icons.settings_outlined, 
+          "Settings", 
+          theme, 
+          isDark,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())),
+        ),
         const SizedBox(height: 12),
-        _buildMenuAction(Icons.help_outline_rounded, "Help & Support", theme, isDark),
+        _buildMenuAction(
+          Icons.help_outline_rounded, 
+          "Help & Support", 
+          theme, 
+          isDark,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportPage())),
+        ),
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
@@ -254,7 +335,7 @@ class _ProfilePageState extends State<ProfilePage> {
           child: ElevatedButton(
             onPressed: _logout,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.withOpacity(0.1),
+              backgroundColor: Colors.red.withValues(alpha: 0.1),
               foregroundColor: Colors.red,
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -275,7 +356,7 @@ class _ProfilePageState extends State<ProfilePage> {
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100),
+          border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100),
         ),
         child: Row(
           children: [

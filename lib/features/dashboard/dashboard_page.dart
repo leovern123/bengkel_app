@@ -26,6 +26,7 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
+  late PageController _pageController;
 
   String userName = "Loading...";
   int productCount = 0;
@@ -36,7 +37,14 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _selectedIndex);
     _loadDashboardData();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadDashboardData() async {
@@ -85,8 +93,11 @@ class _DashboardPageState extends State<DashboardPage> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: loading
           ? Center(child: CircularProgressIndicator(color: theme.primaryColor))
-          : IndexedStack(
-              index: _selectedIndex,
+          : PageView(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() => _selectedIndex = index);
+              },
               children: pages,
             ),
       bottomNavigationBar: _buildBottomNav(theme),
@@ -112,8 +123,7 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildGreeting(theme),
-                const SizedBox(height: 25),
+                const SizedBox(height: 10),
                 _buildStatCards(theme),
                 const SizedBox(height: 35),
                 _buildSectionHeader(theme, "Layanan Utama", Icons.grid_view_rounded),
@@ -129,23 +139,102 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildSliverAppBar(bool isDark) {
-    final theme = Theme.of(context);
     return SliverAppBar(
-      expandedHeight: 120,
+      expandedHeight: 220,
       floating: false,
       pinned: true,
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       elevation: 0,
       flexibleSpace: FlexibleSpaceBar(
-        centerTitle: false,
-        titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
-        title: Text(
-          "BENGKEL APP",
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.w800,
-            letterSpacing: 2,
-            fontSize: 20,
-            color: isDark ? Colors.white : Colors.black87,
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFF8C00), Color(0xFFE65100)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(35),
+              bottomRight: Radius.circular(35),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF8C00).withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Dekorasi Background
+              Positioned(
+                right: -40,
+                top: 0,
+                child: Icon(
+                  Icons.two_wheeler_rounded,
+                  size: 200,
+                  color: Colors.white.withOpacity(0.15),
+                ),
+              ),
+              Positioned(
+                left: -20,
+                bottom: -20,
+                child: Icon(
+                  Icons.build_rounded,
+                  size: 120,
+                  color: Colors.white.withOpacity(0.1),
+                ),
+              ),
+              // Greeting Content
+              Positioned(
+                bottom: 30,
+                left: 25,
+                right: 25,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        "Bengkel App",
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      "Halo, $userName! 👋",
+                      style: GoogleFonts.outfit(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      "Siap mengelola bengkel hari ini?",
+                      style: GoogleFonts.outfit(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -153,39 +242,44 @@ class _DashboardPageState extends State<DashboardPage> {
         IconButton(
           icon: Icon(
             isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-            color: isDark ? Colors.orangeAccent : Colors.blueGrey,
+            color: Colors.white,
           ),
           onPressed: () {
             themeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
           },
         ),
         Stack(
+          alignment: Alignment.center,
           children: [
             IconButton(
-              icon: Icon(Icons.notifications_none_rounded, color: isDark ? Colors.white70 : Colors.black54),
+              icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
               onPressed: () {
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationPage()));
               },
             ),
             Positioned(
               right: 12,
-              top: 12,
+              top: 14,
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                constraints: const BoxConstraints(minWidth: 8, minHeight: 8),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFFF8C00), width: 1.5),
+                ),
+                constraints: const BoxConstraints(minWidth: 10, minHeight: 10),
               ),
             )
           ],
         ),
         Container(
-          margin: const EdgeInsets.only(right: 15, top: 10, bottom: 10),
+          margin: const EdgeInsets.only(right: 15, top: 8, bottom: 8, left: 5),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+            color: Colors.white.withOpacity(0.2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: IconButton(
-            icon: Icon(Icons.logout_rounded, color: isDark ? Colors.white70 : Colors.black54, size: 20),
+            icon: const Icon(Icons.logout_rounded, color: Colors.white, size: 20),
             onPressed: _logout,
           ),
         ),
@@ -193,30 +287,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildGreeting(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Halo, $userName",
-          style: GoogleFonts.outfit(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: theme.textTheme.bodyLarge?.color,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          "Dashboard Manajemen Bengkel",
-          style: GoogleFonts.outfit(
-            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
-            fontSize: 14,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ],
-    );
-  }
+  // (Greeting has been moved to the App Bar)
 
   Widget _buildStatCards(ThemeData theme) {
     return Row(
@@ -309,7 +380,7 @@ class _DashboardPageState extends State<DashboardPage> {
           Navigator.push(context, MaterialPageRoute(builder: (context) => const CustomerListPage())).then((_) => _loadDashboardData());
         }),
         _buildMenuButton(theme, "Riwayat Order", FontAwesomeIcons.fileInvoiceDollar, const Color(0xFFEA4335), () {
-          setState(() => _selectedIndex = 2);
+          _onItemTapped(2);
         }),
       ],
     );
@@ -367,6 +438,15 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  void _onItemTapped(int index) {
+    setState(() => _selectedIndex = index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
   Widget _buildBottomNav(ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
     return Container(
@@ -389,11 +469,11 @@ class _DashboardPageState extends State<DashboardPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(theme, 0, Icons.grid_view_rounded, "Home", () => setState(() => _selectedIndex = 0)),
-            _buildNavItem(theme, 1, Icons.analytics_rounded, "Rekap", () => setState(() => _selectedIndex = 1)),
+            _buildNavItem(theme, 0, Icons.grid_view_rounded, "Home", () => _onItemTapped(0)),
+            _buildNavItem(theme, 1, Icons.analytics_rounded, "Rekap", () => _onItemTapped(1)),
             const SizedBox(width: 40),
-            _buildNavItem(theme, 2, Icons.history_rounded, "History", () => setState(() => _selectedIndex = 2)),
-            _buildNavItem(theme, 3, Icons.person_rounded, "Profile", () => setState(() => _selectedIndex = 3)),
+            _buildNavItem(theme, 2, Icons.history_rounded, "History", () => _onItemTapped(2)),
+            _buildNavItem(theme, 3, Icons.person_rounded, "Profile", () => _onItemTapped(3)),
           ],
         ),
       ),

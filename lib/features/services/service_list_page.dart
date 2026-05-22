@@ -44,27 +44,29 @@ class _ServiceListPageState extends State<ServiceListPage> {
   void _showForm({ServiceModel? service}) {
     final namaController = TextEditingController(text: service?.namaService);
     final hargaController = TextEditingController(text: service?.harga.toStringAsFixed(0));
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           service == null ? "Tambah Layanan" : "Edit Layanan",
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: namaController,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
               decoration: InputDecoration(
                 labelText: "Nama Layanan",
-                labelStyle: const TextStyle(color: Colors.grey),
+                labelStyle: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.5)),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
+                fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
               ),
             ),
@@ -72,21 +74,21 @@ class _ServiceListPageState extends State<ServiceListPage> {
             TextField(
               controller: hargaController,
               keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
               decoration: InputDecoration(
                 labelText: "Harga",
-                labelStyle: const TextStyle(color: Colors.grey),
+                labelStyle: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.5)),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
+                fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal", style: TextStyle(color: Colors.grey))),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text("Batal", style: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.5)))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            style: ElevatedButton.styleFrom(backgroundColor: theme.primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
             onPressed: () async {
               final newService = ServiceModel(
                 namaService: namaController.text,
@@ -265,9 +267,10 @@ class _ServiceListPageState extends State<ServiceListPage> {
                   },
                 ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blue,
+        backgroundColor: theme.primaryColor,
+        foregroundColor: Colors.white,
         onPressed: () => _showForm(),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add),
       ),
     );
   }

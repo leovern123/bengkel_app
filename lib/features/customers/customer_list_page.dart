@@ -45,60 +45,62 @@ class _CustomerListPageState extends State<CustomerListPage> {
     final namaController = TextEditingController(text: customer?.nama);
     final noPlatController = TextEditingController(text: customer?.noPlat);
     final noHpController = TextEditingController(text: customer?.noHp);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           customer == null ? "Tambah Pelanggan" : "Edit Pelanggan",
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: namaController,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
               decoration: InputDecoration(
                 labelText: "Nama",
-                labelStyle: const TextStyle(color: Colors.grey),
+                labelStyle: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.5)),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
+                fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
               ),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: noPlatController,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
               decoration: InputDecoration(
                 labelText: "No. Plat",
-                labelStyle: const TextStyle(color: Colors.grey),
+                labelStyle: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.5)),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
+                fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
               ),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: noHpController,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
               decoration: InputDecoration(
                 labelText: "No. HP",
-                labelStyle: const TextStyle(color: Colors.grey),
+                labelStyle: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.5)),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
+                fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal", style: TextStyle(color: Colors.grey))),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text("Batal", style: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.5)))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            style: ElevatedButton.styleFrom(backgroundColor: theme.primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
             onPressed: () async {
               final newCustomer = CustomerModel(
                 nama: namaController.text,
@@ -237,9 +239,10 @@ class _CustomerListPageState extends State<CustomerListPage> {
                   },
                 ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.green,
+        backgroundColor: theme.primaryColor,
+        foregroundColor: Colors.white,
         onPressed: () => _showForm(),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add),
       ),
     );
   }
