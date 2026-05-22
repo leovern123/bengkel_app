@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/api/data_service.dart';
 import '../../core/models/service_model.dart';
+import '../../core/widgets/empty_state_widget.dart';
 
 class ServiceListPage extends StatefulWidget {
   const ServiceListPage({super.key});
@@ -189,7 +190,13 @@ class _ServiceListPageState extends State<ServiceListPage> {
       body: loading
           ? const Center(child: CircularProgressIndicator(color: Colors.blue))
           : filteredServices.isEmpty
-              ? Center(child: Text("Layanan tidak ditemukan", style: TextStyle(color: theme.textTheme.bodyMedium?.color)))
+              ? EmptyStateWidget(
+                  icon: Icons.handyman_rounded,
+                  title: "Belum Ada Layanan",
+                  subtitle: "Tambahkan jenis layanan atau servis yang tersedia di bengkel Anda.",
+                  actionLabel: "Tambah Layanan",
+                  onAction: () => _showForm(),
+                )
               : ListView.builder(
                   padding: const EdgeInsets.all(20),
                   itemCount: filteredServices.length,

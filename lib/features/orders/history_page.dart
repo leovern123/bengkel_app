@@ -7,6 +7,7 @@ import '../../core/models/customer_model.dart';
 import '../../core/models/product_model.dart';
 import '../../core/models/service_model.dart';
 import '../../core/utils/receipt_service.dart';
+import '../../core/widgets/empty_state_widget.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -240,18 +241,10 @@ class _HistoryPageState extends State<HistoryPage> {
       children: [
         SizedBox(
           height: MediaQuery.of(context).size.height * 0.5,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.history_rounded, size: 80, color: theme.textTheme.bodySmall?.color?.withOpacity(0.1)),
-                const SizedBox(height: 20),
-                Text(
-                  "Belum ada transaksi",
-                  style: GoogleFonts.outfit(color: theme.textTheme.bodySmall?.color?.withOpacity(0.5), fontSize: 16),
-                ),
-              ],
-            ),
+          child: const EmptyStateWidget(
+            icon: Icons.history_rounded,
+            title: "Belum Ada Transaksi",
+            subtitle: "Riwayat pesanan dan transaksi Anda akan muncul di sini.",
           ),
         ),
       ],

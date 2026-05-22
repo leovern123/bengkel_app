@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../auth/auth_service.dart';
 import '../auth/login_page.dart';
@@ -92,7 +93,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: loading
-          ? Center(child: CircularProgressIndicator(color: theme.primaryColor))
+          ? _buildDashboardShimmer(theme, isDark)
           : PageView(
               controller: _pageController,
               onPageChanged: (index) {
@@ -113,9 +114,12 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildHome(ThemeData theme, bool isDark) {
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
-      slivers: [
+    return RefreshIndicator(
+      onRefresh: _loadDashboardData,
+      color: const Color(0xFFFF8C00),
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        slivers: [
         _buildSliverAppBar(isDark),
         SliverToBoxAdapter(
           child: Padding(
@@ -135,6 +139,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ),
       ],
+      ),
     );
   }
 
@@ -284,6 +289,64 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDashboardShimmer(ThemeData theme, bool isDark) {
+    return Shimmer.fromColors(
+      baseColor: isDark ? Colors.white10 : Colors.grey.shade300,
+      highlightColor: isDark ? Colors.white24 : Colors.grey.shade100,
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 220,
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(35),
+                  bottomRight: Radius.circular(35),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(child: Container(height: 120, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)))),
+                      const SizedBox(width: 12),
+                      Expanded(child: Container(height: 120, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)))),
+                      const SizedBox(width: 12),
+                      Expanded(child: Container(height: 120, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)))),
+                    ],
+                  ),
+                  const SizedBox(height: 35),
+                  Container(height: 25, width: 150, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8))),
+                  const SizedBox(height: 15),
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 15,
+                    mainAxisSpacing: 15,
+                    childAspectRatio: 1.3,
+                    children: List.generate(4, (index) => Container(
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                    )),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

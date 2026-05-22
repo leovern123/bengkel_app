@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/api/data_service.dart';
 import '../../core/models/product_model.dart';
+import '../../core/widgets/empty_state_widget.dart';
 
 class ProductListPage extends StatefulWidget {
   const ProductListPage({super.key});
@@ -89,7 +90,13 @@ class _ProductListPageState extends State<ProductListPage> {
       body: loading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFFFF8C00)))
           : filteredProducts.isEmpty
-              ? Center(child: Text("Produk tidak ditemukan", style: TextStyle(color: theme.textTheme.bodyMedium?.color)))
+              ? EmptyStateWidget(
+                  icon: Icons.inventory_2_outlined,
+                  title: "Belum Ada Produk",
+                  subtitle: "Mulai tambahkan sparepart atau produk yang dijual di bengkel.",
+                  actionLabel: "Tambah Produk",
+                  onAction: () => _showForm(),
+                )
               : ListView.builder(
                   padding: const EdgeInsets.all(20),
                   itemCount: filteredProducts.length,

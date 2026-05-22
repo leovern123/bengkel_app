@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/api/data_service.dart';
 import '../../core/models/customer_model.dart';
+import '../../core/widgets/empty_state_widget.dart';
 
 class CustomerListPage extends StatefulWidget {
   const CustomerListPage({super.key});
@@ -202,7 +203,13 @@ class _CustomerListPageState extends State<CustomerListPage> {
       body: loading
           ? const Center(child: CircularProgressIndicator(color: Colors.green))
           : filteredCustomers.isEmpty
-              ? Center(child: Text("Pelanggan tidak ditemukan", style: TextStyle(color: theme.textTheme.bodyMedium?.color)))
+              ? EmptyStateWidget(
+                  icon: Icons.people_outline_rounded,
+                  title: "Belum Ada Pelanggan",
+                  subtitle: "Data pelanggan yang Anda tambahkan akan muncul di sini.",
+                  actionLabel: "Tambah Pelanggan",
+                  onAction: () => _showForm(),
+                )
               : ListView.builder(
                   padding: const EdgeInsets.all(20),
                   itemCount: filteredCustomers.length,

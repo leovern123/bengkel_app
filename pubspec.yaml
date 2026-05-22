@@ -46,6 +46,8 @@ dependencies:
   shared_preferences: ^2.5.5
   local_auth: ^3.0.1
   cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+  fl_chart: ^1.2.0
 
 dev_dependencies:
   flutter_test:
