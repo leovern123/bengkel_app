@@ -42,7 +42,7 @@ class _HistoryPageState extends State<HistoryPage> {
     final s = await DataService.getServices();
     if (mounted) {
       setState(() {
-        orders = o.reversed.toList(); // Newest first
+        orders = List.from(o)..sort((a, b) => b.tanggal.compareTo(a.tanggal)); // Newest first by date
         filteredOrders = orders;
         customers = c;
         products = p;
