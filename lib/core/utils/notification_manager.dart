@@ -9,6 +9,7 @@ class AppNotification {
   final String body;
   final DateTime time;
   final NotificationType type;
+  bool isRead;
 
   AppNotification({
     required this.id,
@@ -16,6 +17,7 @@ class AppNotification {
     required this.body,
     required this.time,
     required this.type,
+    this.isRead = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -24,6 +26,7 @@ class AppNotification {
         'body': body,
         'time': time.toIso8601String(),
         'type': type.index,
+        'isRead': isRead,
       };
 
   factory AppNotification.fromJson(Map<String, dynamic> json) => AppNotification(
@@ -32,6 +35,7 @@ class AppNotification {
         body: json['body'],
         time: DateTime.parse(json['time']),
         type: NotificationType.values[json['type']],
+        isRead: json['isRead'] ?? false,
       );
 }
 
@@ -50,6 +54,7 @@ class NotificationManager {
       body: body,
       time: DateTime.now(),
       type: type,
+      isRead: false,
     );
 
     _notifications.insert(0, newNotif);
@@ -61,6 +66,22 @@ class NotificationManager {
       await _loadFromStorage();
     }
     return _notifications;
+  }
+
+  /// Jumlah notifikasi yang belum dibaca
+  static Future<int> getUnreadCount() async {
+    if (_notifications.isEmpty) {
+      await _loadFromStorage();
+    }
+    return _notifications.where((n) => !n.isRead).length;
+  }
+
+  /// Tandai semua notifikasi sebagai sudah dibaca
+  static Future<void> markAllAsRead() async {
+    for (var n in _notifications) {
+      n.isRead = true;
+    }
+    await _saveToStorage();
   }
 
   static Future<void> _saveToStorage() async {

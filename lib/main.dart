@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'core/storage/token_storage.dart';
 import 'features/auth/login_page.dart';
 import 'features/dashboard/dashboard_page.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'core/utils/notification_service.dart';
 
 // Global theme notifier
@@ -12,6 +13,7 @@ final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.dark);
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService.init();
+  await initializeDateFormatting('id_ID', null);
 
   // Load saved theme
   final prefs = await SharedPreferences.getInstance();

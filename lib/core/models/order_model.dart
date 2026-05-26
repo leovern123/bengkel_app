@@ -62,6 +62,8 @@ class OrderDetailModel {
   final int? productId;
   final int qty;
   final double subtotal;
+  final String? productName;
+  final String? serviceName;
 
   OrderDetailModel({
     this.id,
@@ -70,6 +72,8 @@ class OrderDetailModel {
     this.productId,
     required this.qty,
     required this.subtotal,
+    this.productName,
+    this.serviceName,
   });
 
   factory OrderDetailModel.fromJson(Map<String, dynamic> json) {
@@ -80,6 +84,8 @@ class OrderDetailModel {
       productId: json['product_id'],
       qty: json['qty'] ?? 0,
       subtotal: double.tryParse(json['subtotal'].toString()) ?? 0.0,
+      productName: json['product'] != null ? json['product']['nama_produk'] : null,
+      serviceName: json['service'] != null ? json['service']['nama_service'] : null,
     );
   }
 

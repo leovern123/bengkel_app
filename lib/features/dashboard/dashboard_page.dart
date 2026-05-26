@@ -17,6 +17,7 @@ import '../../main.dart'; // Import global themeNotifier
 import '../reports/report_page.dart';
 import '../profile/profile_page.dart';
 import '../notifications/notification_page.dart';
+import '../../core/utils/notification_manager.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -33,6 +34,7 @@ class _DashboardPageState extends State<DashboardPage> {
   int productCount = 0;
   int serviceCount = 0;
   int customerCount = 0;
+  int unreadNotifCount = 0;
   bool loading = true;
 
   @override
@@ -63,6 +65,9 @@ class _DashboardPageState extends State<DashboardPage> {
         loading = false;
       });
     }
+    // Muat jumlah notifikasi yang belum dibaca
+    final unread = await NotificationManager.getUnreadCount();
+    if (mounted) setState(() => unreadNotifCount = unread);
   }
 
   Future<void> _logout() async {
@@ -258,35 +263,27 @@ class _DashboardPageState extends State<DashboardPage> {
           children: [
             IconButton(
               icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
-              onPressed: () {
+              onPressed: () async {
+                await NotificationManager.markAllAsRead();
+                setState(() => unreadNotifCount = 0);
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationPage()));
               },
             ),
-            Positioned(
-              right: 12,
-              top: 14,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFFF8C00), width: 1.5),
+            if (unreadNotifCount > 0)
+              Positioned(
+                right: 12,
+                top: 14,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFFF8C00), width: 1.5),
+                  ),
+                  constraints: const BoxConstraints(minWidth: 10, minHeight: 10),
                 ),
-                constraints: const BoxConstraints(minWidth: 10, minHeight: 10),
-              ),
-            )
+              )
           ],
-        ),
-        Container(
-          margin: const EdgeInsets.only(right: 15, top: 8, bottom: 8, left: 5),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.logout_rounded, color: Colors.white, size: 20),
-            onPressed: _logout,
-          ),
         ),
       ],
     );
@@ -355,18 +352,23 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildStatCards(ThemeData theme) {
     return Row(
       children: [
-        _buildStatItem(theme, "Produk", productCount.toString(), Icons.inventory_2_rounded, const Color(0xFFFF8C00)),
+        _buildStatItem(theme, "Produk", productCount.toString(), Icons.inventory_2_rounded, const Color(0xFFFF8C00),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProductListPage())).then((_) => _loadDashboardData())),
         const SizedBox(width: 12),
-        _buildStatItem(theme, "Layanan", serviceCount.toString(), Icons.handyman_rounded, const Color(0xFF4285F4)),
+        _buildStatItem(theme, "Layanan", serviceCount.toString(), Icons.handyman_rounded, const Color(0xFF4285F4),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ServiceListPage())).then((_) => _loadDashboardData())),
         const SizedBox(width: 12),
-        _buildStatItem(theme, "Pelanggan", customerCount.toString(), Icons.people_alt_rounded, const Color(0xFF34A853)),
+        _buildStatItem(theme, "Pelanggan", customerCount.toString(), Icons.people_alt_rounded, const Color(0xFF34A853),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CustomerListPage())).then((_) => _loadDashboardData())),
       ],
     );
   }
 
-  Widget _buildStatItem(ThemeData theme, String label, String value, IconData icon, Color color) {
+  Widget _buildStatItem(ThemeData theme, String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
     return Expanded(
-      child: Container(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
@@ -403,6 +405,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

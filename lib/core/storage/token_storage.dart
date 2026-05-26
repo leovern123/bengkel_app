@@ -13,6 +13,18 @@ class TokenStorage {
 
   static Future<void> deleteToken() async {
     await _storage.delete(key: "token");
+    await _storage.delete(key: "user_id"); // Hapus user_id saat logout
+  }
+
+  // Simpan user ID setelah login/register
+  static Future<void> saveUserId(int userId) async {
+    await _storage.write(key: "user_id", value: userId.toString());
+  }
+
+  // Ambil user ID yang sedang login
+  static Future<int?> getUserId() async {
+    final val = await _storage.read(key: "user_id");
+    return val != null ? int.tryParse(val) : null;
   }
 
   // Save email and password securely for biometric login

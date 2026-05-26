@@ -56,7 +56,7 @@ class _HistoryPageState extends State<HistoryPage> {
   void _filterOrders(String query) {
     setState(() {
       filteredOrders = orders.where((order) {
-        final customerName = _getCustomerName(order.customerId).toLowerCase();
+        final customerName = _getCustomerName(order).toLowerCase();
         return customerName.contains(query.toLowerCase());
       }).toList();
       _currentPage = 0;
@@ -65,12 +65,18 @@ class _HistoryPageState extends State<HistoryPage> {
 
   String _getItemName(OrderDetailModel item) {
     if (item.productId != null) {
+      if (item.productName != null && item.productName!.isNotEmpty) {
+        return item.productName!;
+      }
       try {
         return products.firstWhere((p) => p.id == item.productId).namaProduk;
       } catch (e) {
         return "Produk #${item.productId}";
       }
     } else if (item.serviceId != null) {
+      if (item.serviceName != null && item.serviceName!.isNotEmpty) {
+        return item.serviceName!;
+      }
       try {
         return services.firstWhere((s) => s.id == item.serviceId).namaService;
       } catch (e) {
@@ -80,9 +86,12 @@ class _HistoryPageState extends State<HistoryPage> {
     return "Unknown Item";
   }
 
-  String _getCustomerName(int id) {
+  String _getCustomerName(OrderModel order) {
+    if (order.customerName != null && order.customerName!.isNotEmpty) {
+      return order.customerName!;
+    }
     try {
-      return customers.firstWhere((c) => c.id == id).nama;
+      return customers.firstWhere((c) => c.id == order.customerId).nama;
     } catch (e) {
       return "Unknown";
     }
@@ -291,7 +300,7 @@ class _HistoryPageState extends State<HistoryPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _getCustomerName(order.customerId),
+                        _getCustomerName(order),
                         style: GoogleFonts.outfit(
                           color: theme.textTheme.bodyLarge?.color, 
                           fontWeight: FontWeight.bold, 
@@ -384,7 +393,7 @@ class _HistoryPageState extends State<HistoryPage> {
               _buildDetailRow(
                 theme,
                 "Pelanggan",
-                _getCustomerName(order.customerId),
+                _getCustomerName(order),
               ),
               _buildDetailRow(
                 theme,
@@ -501,7 +510,7 @@ class _HistoryPageState extends State<HistoryPage> {
 
   void _printReceipt(OrderModel order) async {
     final customer = customers.firstWhere((c) => c.id == order.customerId,
-        orElse: () => CustomerModel(nama: "Pelanggan #${order.customerId}", noPlat: ""));
+        orElse: () => CustomerModel(nama: order.customerName ?? "Pelanggan #${order.customerId}", noPlat: ""));
 
     List<Map<String, dynamic>> receiptItems = [];
 

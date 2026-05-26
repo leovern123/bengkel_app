@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'api_client.dart';
 import '../models/product_model.dart';
@@ -94,6 +95,7 @@ class DataService {
       final response = await ApiClient.dio.get("/services");
       return (response.data as List).map((i) => ServiceModel.fromJson(i)).toList();
     } catch (e) {
+      debugPrint("Error getServices: $e");
       return [];
     }
   }
@@ -178,7 +180,7 @@ class DataService {
       final response = await ApiClient.dio.get("/orders");
       return (response.data as List).map((i) => OrderModel.fromJson(i)).toList();
     } catch (e) {
-      print("Error fetching orders: $e");
+      debugPrint("Error getOrders: $e");
       return [];
     }
   }

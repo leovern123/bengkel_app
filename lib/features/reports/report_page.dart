@@ -54,7 +54,8 @@ class _ReportPageState extends State<ReportPage> {
         } else {
           return order.tanggal.year == selectedDate.year;
         }
-      }).toList();
+      }).toList()
+        ..sort((a, b) => b.tanggal.compareTo(a.tanggal)); // Terbaru di atas
       _currentPage = 0;
     });
   }

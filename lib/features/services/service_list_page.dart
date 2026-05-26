@@ -23,7 +23,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
     _fetchServices();
   }
 
-  void _fetchServices() async {
+  Future<void> _fetchServices() async {
     final data = await DataService.getServices();
     if (mounted) {
       setState(() {
@@ -189,17 +189,29 @@ class _ServiceListPageState extends State<ServiceListPage> {
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator(color: Colors.blue))
-          : filteredServices.isEmpty
-              ? EmptyStateWidget(
-                  icon: Icons.handyman_rounded,
-                  title: "Belum Ada Layanan",
-                  subtitle: "Tambahkan jenis layanan atau servis yang tersedia di bengkel Anda.",
-                  actionLabel: "Tambah Layanan",
-                  onAction: () => _showForm(),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: filteredServices.length,
+          : RefreshIndicator(
+              onRefresh: _fetchServices,
+              color: Colors.blue,
+              child: filteredServices.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.6,
+                          child: EmptyStateWidget(
+                            icon: Icons.handyman_rounded,
+                            title: "Belum Ada Layanan",
+                            subtitle: "Tambahkan jenis layanan atau servis yang tersedia di bengkel Anda.",
+                            actionLabel: "Tambah Layanan",
+                            onAction: () => _showForm(),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(20),
+                      itemCount: filteredServices.length,
                   itemBuilder: (context, index) {
                     final service = filteredServices[index];
                     return Container(
@@ -273,6 +285,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
                     );
                   },
                 ),
+            ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: theme.primaryColor,
         foregroundColor: Colors.white,

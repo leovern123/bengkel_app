@@ -89,17 +89,29 @@ class _ProductListPageState extends State<ProductListPage> {
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFFFF8C00)))
-          : filteredProducts.isEmpty
-              ? EmptyStateWidget(
-                  icon: Icons.inventory_2_outlined,
-                  title: "Belum Ada Produk",
-                  subtitle: "Mulai tambahkan sparepart atau produk yang dijual di bengkel.",
-                  actionLabel: "Tambah Produk",
-                  onAction: () => _showForm(),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: filteredProducts.length,
+          : RefreshIndicator(
+              onRefresh: _fetchProducts,
+              color: const Color(0xFFFF8C00),
+              child: filteredProducts.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.6,
+                          child: EmptyStateWidget(
+                            icon: Icons.inventory_2_outlined,
+                            title: "Belum Ada Produk",
+                            subtitle: "Mulai tambahkan sparepart atau produk yang dijual di bengkel.",
+                            actionLabel: "Tambah Produk",
+                            onAction: () => _showForm(),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(20),
+                      itemCount: filteredProducts.length,
                   itemBuilder: (context, index) {
                     final product = filteredProducts[index];
                     return Container(
@@ -194,6 +206,7 @@ class _ProductListPageState extends State<ProductListPage> {
                     );
                   },
                 ),
+            ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.orange,
         onPressed: () => _showForm(),

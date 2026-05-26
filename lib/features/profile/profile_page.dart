@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../auth/auth_service.dart';
@@ -86,6 +87,15 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  String _formatMemberSince(String isoDate) {
+    try {
+      final dt = DateTime.parse(isoDate);
+      return DateFormat('MMMM yyyy', 'id_ID').format(dt);
+    } catch (_) {
+      return isoDate;
+    }
+  }
+
   Future<void> _logout() async {
     bool success = await AuthService.logout();
     if (success && mounted) {
@@ -126,63 +136,138 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _showChangePasswordDialog() {
+    final oldPassCtrl = TextEditingController();
+    final newPassCtrl = TextEditingController();
+    final confirmPassCtrl = TextEditingController();
+    bool isLoading = false;
+    String? errorMsg;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Ubah Password", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: "Password Lama",
-                labelStyle: GoogleFonts.outfit(),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF1E1E1E)
+              : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text("Ubah Password", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (errorMsg != null)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    errorMsg!,
+                    style: GoogleFonts.outfit(color: Colors.red, fontSize: 13),
+                  ),
+                ),
+              TextField(
+                controller: oldPassCtrl,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: "Password Lama",
+                  labelStyle: GoogleFonts.outfit(),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.lock_outline),
+                ),
               ),
+              const SizedBox(height: 15),
+              TextField(
+                controller: newPassCtrl,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: "Password Baru",
+                  labelStyle: GoogleFonts.outfit(),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.lock_reset_outlined),
+                ),
+              ),
+              const SizedBox(height: 15),
+              TextField(
+                controller: confirmPassCtrl,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: "Konfirmasi Password",
+                  labelStyle: GoogleFonts.outfit(),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.check_circle_outline),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isLoading ? null : () => Navigator.pop(ctx),
+              child: Text("Batal", style: GoogleFonts.outfit(color: Colors.grey)),
             ),
-            const SizedBox(height: 15),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: "Password Baru",
-                labelStyle: GoogleFonts.outfit(),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ElevatedButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      setDialogState(() {
+                        isLoading = true;
+                        errorMsg = null;
+                      });
+
+                      final error = await AuthService.changePassword(
+                        oldPassCtrl.text.trim(),
+                        newPassCtrl.text.trim(),
+                        confirmPassCtrl.text.trim(),
+                      );
+
+                      if (error == null) {
+                        // Sukses
+                        if (mounted) Navigator.pop(ctx);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  const Icon(Icons.check_circle, color: Colors.white),
+                                  const SizedBox(width: 10),
+                                  Text("Password berhasil diubah!", style: GoogleFonts.outfit()),
+                                ],
+                              ),
+                              backgroundColor: Colors.green,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                        }
+                      } else {
+                        setDialogState(() {
+                          isLoading = false;
+                          errorMsg = error;
+                        });
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF8C00),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-            ),
-            const SizedBox(height: 15),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: "Konfirmasi Password",
-                labelStyle: GoogleFonts.outfit(),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : Text("Simpan", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("Batal", style: GoogleFonts.outfit(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Fitur Ubah Password akan segera tersedia")),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF8C00),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: Text("Simpan", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
-    );
+    ).whenComplete(() {
+      oldPassCtrl.dispose();
+      newPassCtrl.dispose();
+      confirmPassCtrl.dispose();
+    });
   }
 
   Widget _buildProfileHeader(ThemeData theme, bool isDark) {
@@ -286,7 +371,14 @@ class _ProfilePageState extends State<ProfilePage> {
           const Divider(height: 30),
           _buildInfoRow(Icons.email_outlined, "Email", userProfile?['email'] ?? "-", theme),
           const Divider(height: 30),
-          _buildInfoRow(Icons.calendar_today_outlined, "Member Since", "May 2024", theme),
+          _buildInfoRow(
+            Icons.calendar_today_outlined,
+            "Member Since",
+            userProfile?['created_at'] != null
+                ? _formatMemberSince(userProfile!['created_at'].toString())
+                : "N/A",
+            theme,
+          ),
         ],
       ),
     );

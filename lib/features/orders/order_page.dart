@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -5,6 +6,7 @@ import '../../core/api/data_service.dart';
 import '../../core/models/customer_model.dart';
 import '../../core/models/product_model.dart';
 import '../../core/models/service_model.dart';
+import '../../core/storage/token_storage.dart';
 import '../../core/utils/notification_service.dart';
 import '../../core/utils/notification_manager.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -82,6 +84,92 @@ class _OrderPageState extends State<OrderPage> {
     }
     return pTotal + sTotal;
   }
+/// Tampilkan dialog konfirmasi sebelum proses order
+  Future<void> _showConfirmationDialog() async {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF8C00).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.receipt_long_rounded, color: Color(0xFFFF8C00), size: 22),
+            ),
+            const SizedBox(width: 12),
+            Text("Konfirmasi Order", style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Pelanggan:", style: GoogleFonts.outfit(color: theme.hintColor, fontSize: 13)),
+            Text(
+              "${selectedCustomer?.nama} — ${selectedCustomer?.noPlat}",
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+            const SizedBox(height: 12),
+            if (selectedServiceIds.isNotEmpty) ...[
+              Text("Layanan:", style: GoogleFonts.outfit(color: theme.hintColor, fontSize: 13)),
+              ...selectedServiceIds.map((id) {
+                final s = services.firstWhere((s) => s.id == id);
+                return Text("• ${s.namaService}", style: GoogleFonts.outfit(fontSize: 14));
+              }),
+              const SizedBox(height: 8),
+            ],
+            if (productQuantities.isNotEmpty) ...[
+              Text("Produk:", style: GoogleFonts.outfit(color: theme.hintColor, fontSize: 13)),
+              ...productQuantities.entries.map((e) {
+                final p = products.firstWhere((p) => p.id == e.key);
+                return Text("• ${p.namaProduk} x${e.value}", style: GoogleFonts.outfit(fontSize: 14));
+              }),
+              const SizedBox(height: 8),
+            ],
+            const Divider(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Total:", style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+                Text(
+                  currencyFormat.format(total),
+                  style: GoogleFonts.outfit(color: const Color(0xFFFF8C00), fontWeight: FontWeight.w800, fontSize: 16),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text("Batal", style: GoogleFonts.outfit(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF8C00),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text("Proses", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      _processOrder();
+    }
+  }
+
 void _processOrder() async {
   if (selectedCustomer == null) return;
 
@@ -126,11 +214,12 @@ void _processOrder() async {
     // =========================
     // ORDER DATA
     // =========================
+    // Ambil user_id dari storage (bukan hardcode)
+    final loggedUserId = await TokenStorage.getUserId() ?? 1;
+
     final orderData = {
       'customer_id': selectedCustomer!.id,
-
-      // sementara hardcode user login
-      'user_id': 1,
+      'user_id': loggedUserId,
 
       'tanggal': DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now()),
 
@@ -138,7 +227,7 @@ void _processOrder() async {
       'details': items,
     };
 
-  print(orderData);
+  debugPrint("Order data: $orderData");
 
   bool success =
       await DataService.addOrder(orderData);
@@ -654,8 +743,8 @@ void _processOrder() async {
                         )
                     ],
                   ),
-                  child: ElevatedButton(
-                    onPressed: processing || selectedCustomer == null || (productQuantities.isEmpty && selectedServiceIds.isEmpty) ? null : _processOrder,
+                    child: ElevatedButton(
+                    onPressed: processing || selectedCustomer == null || (productQuantities.isEmpty && selectedServiceIds.isEmpty) ? null : _showConfirmationDialog,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       foregroundColor: Colors.white,
